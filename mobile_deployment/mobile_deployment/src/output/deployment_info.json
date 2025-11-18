@@ -1,0 +1,42 @@
+{
+  "model_file": "models/glucose_predictor.tflite",
+  "model_size_mb": 0.19658660888671875,
+  "input_specification": {
+    "time_series": {
+      "shape": [
+        1,
+        10,
+        51
+      ],
+      "description": "10\u4e2a\u65f6\u95f4\u6b65\u7684\u5386\u53f2\u6570\u636e\uff0c\u6bcf\u4e2a\u65f6\u95f4\u6b6551\u4e2a\u7279\u5f81"
+    },
+    "static": {
+      "shape": [
+        1,
+        30
+      ],
+      "description": "30\u4e2a\u9759\u6001\u60a3\u8005\u7279\u5f81"
+    }
+  },
+  "output_specification": {
+    "shape": [
+      1,
+      4
+    ],
+    "description": "4\u4e2a\u65f6\u95f4\u70b9\u7684\u8840\u7cd6\u9884\u6d4b\u503c (15, 30, 45, 60\u5206\u949f)"
+  },
+  "compatibility": {
+    "platforms": [
+      "Android",
+      "iOS",
+      "Web"
+    ],
+    "framework": "TensorFlow Lite",
+    "min_tf_version": "2.8.0"
+  },
+  "performance": {
+    "inference_time_ms": "< 50",
+    "memory_usage_mb": "< 20",
+    "model_type": "LSTM + Cross-Attention"
+  }
+}

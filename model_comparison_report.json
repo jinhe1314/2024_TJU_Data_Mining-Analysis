@@ -1,0 +1,122 @@
+{
+    "model_comparison": {
+        "original_model": {
+            "file": "GCM_model.h5",
+            "size": "1.9M",
+            "created": "2024-11-15 16:48"
+        },
+        "new_model": {
+            "file": "GCM_model_tf213_new.h5",
+            "size": "1.9M",
+            "created": "2024-11-15 22:05",
+            "size_difference": "15KB smaller"
+        }
+    },
+    "overall_performance": {
+        "original_model": {
+            "mae": 12.244674159736835,
+            "rmse": 17.989674228408138,
+            "r2": 0.8884965110067937
+        },
+        "new_model": {
+            "mae": 13.55370996051709,
+            "rmse": 19.66367851925623,
+            "r2": 0.8667793986167702
+        }
+    },
+    "detailed_comparison": [
+        {
+            "time_horizon": "15 min",
+            "original_model": {
+                "mae": 8.789382144824039,
+                "rmse": 12.440752543902665,
+                "r2": 0.946620717476508,
+                "clinical_accuracy": 83.15168767791785
+            },
+            "new_model": {
+                "mae": 9.376799422950945,
+                "rmse": 13.373119106075182,
+                "r2": 0.9383199305730336,
+                "clinical_accuracy": 80.62220414802765
+            },
+            "performance_change": {
+                "mae_change": 0.5874172781269067,
+                "mae_change_percent": 6.683260193355345,
+                "rmse_change": 0.9323665621725166,
+                "r2_change": -0.008300786903474355,
+                "clinical_accuracy_change": -2.5294835298902
+            }
+        },
+        {
+            "time_horizon": "30 min",
+            "original_model": {
+                "mae": 11.151293907150011,
+                "rmse": 16.035830078210584,
+                "r2": 0.9112630126320472,
+                "clinical_accuracy": 75.23790158601057
+            },
+            "new_model": {
+                "mae": 12.314449726242806,
+                "rmse": 17.62057470487412,
+                "r2": 0.8928574626553565,
+                "clinical_accuracy": 71.72021146807646
+            },
+            "performance_change": {
+                "mae_change": 1.163155819092795,
+                "mae_change_percent": 10.430680320845997,
+                "rmse_change": 1.5847446266635359,
+                "r2_change": -0.01840554997669075,
+                "clinical_accuracy_change": -3.5176901179341087
+            }
+        },
+        {
+            "time_horizon": "45 min",
+            "original_model": {
+                "mae": 13.366669125364972,
+                "rmse": 19.32254162874292,
+                "r2": 0.8713414803866382,
+                "clinical_accuracy": 68.67425782838552
+            },
+            "new_model": {
+                "mae": 14.965182978943043,
+                "rmse": 21.277196071710527,
+                "r2": 0.8439948849670977,
+                "clinical_accuracy": 64.20089467263115
+            },
+            "performance_change": {
+                "mae_change": 1.598513853578071,
+                "mae_change_percent": 11.958954310798987,
+                "rmse_change": 1.954654442967609,
+                "r2_change": -0.02734659541954043,
+                "clinical_accuracy_change": -4.47336315575437
+            }
+        },
+        {
+            "time_horizon": "60 min",
+            "original_model": {
+                "mae": 15.671351461608317,
+                "rmse": 22.56618554888356,
+                "r2": 0.8250254066055405,
+                "clinical_accuracy": 62.72468483123221
+            },
+            "new_model": {
+                "mae": 17.558407713931572,
+                "rmse": 24.588553666397278,
+                "r2": 0.7922578362312239,
+                "clinical_accuracy": 57.32004880032534
+            },
+            "performance_change": {
+                "mae_change": 1.887056252323255,
+                "mae_change_percent": 12.04143916334317,
+                "rmse_change": 2.022368117513718,
+                "r2_change": -0.032767570374316546,
+                "clinical_accuracy_change": -5.404636030906872
+            }
+        }
+    ],
+    "conclusion": {
+        "winner": "original_model",
+        "performance_difference": 1.3090358007802543,
+        "recommendation": "\u539f\u59cb\u6a21\u578b\u6027\u80fd\u66f4\u4f18\uff0c\u5efa\u8bae\u4f7f\u7528GCM_model.h5\u8fdb\u884c\u8840\u7cd6\u9884\u6d4b"
+    }
+}

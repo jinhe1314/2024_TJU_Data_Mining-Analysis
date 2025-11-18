@@ -1,0 +1,70 @@
+{
+    "model_info": {
+        "model_file": "GCM_model.h5",
+        "test_samples": 24590,
+        "prediction_horizons": [
+            "15 min",
+            "30 min",
+            "45 min",
+            "60 min"
+        ],
+        "unit": "mg/dL"
+    },
+    "overall_performance": {
+        "mae": 12.244674159736835,
+        "rmse": 17.989674228408138,
+        "r2": 0.8884965110067937
+    },
+    "detailed_performance": [
+        {
+            "time_horizon": "15 min",
+            "mae": 8.789382144824039,
+            "rmse": 12.440752543902665,
+            "r2": 0.946620717476508,
+            "mape": 6.558486810839533,
+            "clinical_accuracy_15mg": 83.15168767791785,
+            "clinical_accuracy_20percent": 99.27206181374542
+        },
+        {
+            "time_horizon": "30 min",
+            "mae": 11.151293907150011,
+            "rmse": 16.035830078210584,
+            "r2": 0.9112630126320472,
+            "mape": 8.24924132521159,
+            "clinical_accuracy_15mg": 75.23790158601057,
+            "clinical_accuracy_20percent": 98.05205368035786
+        },
+        {
+            "time_horizon": "45 min",
+            "mae": 13.366669125364972,
+            "rmse": 19.32254162874292,
+            "r2": 0.8713414803866382,
+            "mape": 9.850814621436738,
+            "clinical_accuracy_15mg": 68.67425782838552,
+            "clinical_accuracy_20percent": 96.48637657584383
+        },
+        {
+            "time_horizon": "60 min",
+            "mae": 15.671351461608317,
+            "rmse": 22.56618554888356,
+            "r2": 0.8250254066055405,
+            "mape": 11.52705391604351,
+            "clinical_accuracy_15mg": 62.72468483123221,
+            "clinical_accuracy_20percent": 94.40016266775112
+        }
+    ],
+    "data_statistics": {
+        "actual_glucose_range": {
+            "min": 39.599999999999994,
+            "max": 475.2,
+            "mean": 142.34319845465637,
+            "std": 53.873981204767375
+        },
+        "predicted_glucose_range": {
+            "min": 30.30453109741211,
+            "max": 454.2439880371094,
+            "mean": 141.04246741892507,
+            "std": 51.78930967813282
+        }
+    }
+}

@@ -12,7 +12,7 @@ import json
 
 
 class TimeModel:
-    def __init__(self, num_units=64, model_path="GCM_model.h5"):
+    def __init__(self, num_units=64, model_path="GCM_model_tf213_new.h5"):
         self.scaler_ts_X = StandardScaler()
         self.scaler_static_X = StandardScaler()
         self.scaler_y = StandardScaler()
@@ -143,9 +143,29 @@ class TimeModel:
         self.model = Model(inputs=[ts_input, static_input], outputs=output)
         self.model.compile(optimizer='adam', loss='mean_squared_error', metrics=['mean_absolute_error'])
     
-    def train_model(self, epochs=50, batch_size=32, validation_split=0.2):
-        history = self.model.fit([self.ts_X_train, self.static_X_train], self.y_train,
-                                 epochs=epochs, batch_size=batch_size, validation_split=validation_split)
+    def train_model(self, epochs=80, batch_size=64, validation_split=0.2):
+        # GPU优化参数：更大的批次大小，更多的训练轮次
+        print(f"Training with optimized parameters: epochs={epochs}, batch_size={batch_size}")
+
+        # 回调函数
+        callbacks = [
+            tf.keras.callbacks.EarlyStopping(
+                monitor='val_loss', patience=15, restore_best_weights=True, verbose=1
+            ),
+            tf.keras.callbacks.ReduceLROnPlateau(
+                monitor='val_loss', factor=0.5, patience=7, verbose=1
+            )
+        ]
+
+        history = self.model.fit(
+            [self.ts_X_train, self.static_X_train],
+            self.y_train,
+            epochs=epochs,
+            batch_size=batch_size,
+            validation_split=validation_split,
+            callbacks=callbacks,
+            verbose=1
+        )
         self.model.save(self.model_save_path)  # 保存模型
         return history
         

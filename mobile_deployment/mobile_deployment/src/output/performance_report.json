@@ -1,0 +1,63 @@
+{
+  "model_info": {
+    "tflite_file": "/home/gitlab-runner/2024_TJU_Data_Mining-Analysis/mobile_deployment/mobile_deployment/src/output/glucose_predictor.tflite",
+    "file_size_mb": 0.19658660888671875,
+    "input_shapes": [
+      [
+        1,
+        10,
+        51
+      ],
+      [
+        1,
+        30
+      ]
+    ],
+    "output_shapes": [
+      [
+        1,
+        4
+      ]
+    ]
+  },
+  "performance": {
+    "avg_inference_time_ms": 1.397157405037433,
+    "min_inference_time_ms": 1.2923120521008968,
+    "max_inference_time_ms": 1.7832610756158829,
+    "p95_inference_time_ms": 1.4760990859940648,
+    "p99_inference_time_ms": 1.6238314984366298,
+    "total_runs": 1000,
+    "throughput_qps": 715738.9685618192
+  },
+  "consistency": {
+    "num_tests": 100,
+    "mean_prediction": [
+      [
+        0.8018967509269714,
+        1.0896501541137695,
+        1.3065533638000488,
+        1.4272642135620117
+      ]
+    ],
+    "std_deviation": [
+      [
+        0.475629985332489,
+        0.4643273949623108,
+        0.493490993976593,
+        0.5255358219146729
+      ]
+    ],
+    "max_deviation": 0.5255358219146729,
+    "prediction_range": [
+      -0.2475346177816391,
+      2.9849205017089844
+    ]
+  },
+  "timestamp": "2025-11-17 09:14:30",
+  "test_summary": {
+    "model_ready_for_mobile": true,
+    "inference_time_acceptable": true,
+    "model_size_acceptable": true,
+    "output_consistent": false
+  }
+}
