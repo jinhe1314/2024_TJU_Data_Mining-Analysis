@@ -84,30 +84,77 @@ patient_data = pd.read_csv(patient_file)
 
 print(f"患者数据总条数: {len(patient_data)}")
 
-# 提取前10个数据点（用于创建10步输入）
-if len(patient_data) >= 10:
-    patient_data_subset = patient_data.iloc[:10].copy()
-    patient_ts_features = patient_data_subset[time_serise_attribute].values  # (10, 53)
-    patient_static_features = patient_data_subset[static_attribute].values[0]  # (31,)
+# 显示患者基本信息
+print("\n" + "=" * 60)
+print("患者基本信息")
+print("=" * 60)
+patient_info = patient_data.iloc[0]
+gender_text = "女性" if patient_info["Gender (Female=1, Male=2)"] == 1 else "男性"
+diabetes_type = "T1DM (1型糖尿病)" if patient_info["Type of Diabetes"] == 1 else "T2DM (2型糖尿病)"
 
-    # 准备输入
-    ts_X_input = patient_ts_features.reshape(1, 10, -1)  # (1, 10, 53)
-    static_X_input = patient_static_features.reshape(1, -1)  # (1, 31)
+print(f"患者ID: 2035_0_20210629")
+print(f"性别: {gender_text}")
+print(f"年龄: {patient_info['Age (years)']:.0f} 岁")
+print(f"身高: {patient_info['Height (m)']:.2f} m")
+print(f"体重: {patient_info['Weight (kg)']:.1f} kg")
+print(f"BMI: {patient_info['BMI (kg/m2)']:.2f}")
+print(f"糖尿病类型: {diabetes_type}")
+print(f"糖尿病病程: {patient_info['Duration of Diabetes  (years)']:.0f} 年")
+print(f"HbA1c: {patient_info['HbA1c (mmol/mol)']:.2f} mmol/mol")
+print(f"空腹血糖: {patient_info['Fasting Plasma Glucose (mg/dl)']:.1f} mg/dL")
+print("=" * 60)
 
-    # 标准化
-    ts_X_input = scaler_ts_X.transform(ts_X_input.reshape(-1, ts_X_input.shape[-1])).reshape(ts_X_input.shape)
-    static_X_input = scaler_static_X.transform(static_X_input)
+# 提取前10个数据点（用于10步时间窗口）
+patient_data_subset = patient_data.iloc[:10].copy()
 
-    # 获取前9个时间点的血糖值用于可视化
-    cgm_values = patient_data_subset['CGM (mg / dl)'].values[:9]
-    dates = patient_data_subset['Date'].values[:9]
+# 提取时序特征和静态特征
+patient_ts_features = patient_data_subset[time_serise_attribute].values  # (10, 51)
+patient_static_features = patient_data_subset[static_attribute].values[0]  # (30,) 静态特征对所有时间步都一样
 
-    print(f"前9个时间点的血糖值 (CGM): {cgm_values}")
-    print(f"时间范围: {dates[0]} -> {dates[-1]}")
-    print(f"输入形状 - 时序: {ts_X_input.shape}, 静态: {static_X_input.shape}")
-else:
-    print("警告: 患者数据不足10个时间点")
-    exit(1)
+# 获取前9个时间点的血糖值（用于可视化）
+cgm_values = patient_data_subset['CGM (mg / dl)'].values[:9]
+dates = patient_data_subset['Date'].values[:9]
+
+print(f"\n前9个时间点的血糖值 (CGM): {cgm_values}")
+print(f"时间范围: {dates[0]} -> {dates[-1]}")
+
+# 5. 准备模型输入
+print("\n[5] 准备模型输入...")
+
+# 准备输入数据
+ts_X_input = patient_ts_features.reshape(1, 10, -1)  # (1, 10, 51)
+static_X_input = patient_static_features.reshape(1, -1)  # (1, 30)
+
+print(f"\n输入数据概览:")
+print(f"  时序输入形状: {ts_X_input.shape}")
+print(f"    - 批次大小: 1")
+print(f"    - 时间步数: 10 (150分钟历史窗口)")
+print(f"    - 时序特征数: {ts_X_input.shape[2]}")
+print(f"  静态输入形状: {static_X_input.shape}")
+print(f"    - 静态特征数: {static_X_input.shape[1]}")
+
+print(f"\n时序特征包括:")
+print(f"  - CGM血糖读数")
+print(f"  - 饮食摄入 (0/1)")
+print(f"  - CSII胰岛素剂量 (基础+餐时)")
+print(f"  - 皮下注射胰岛素剂量 (多种类型)")
+print(f"  - 静脉注射胰岛素剂量 (多种类型)")
+print(f"  - 非胰岛素降糖药物")
+
+print(f"\n静态特征包括:")
+print(f"  - 患者人口学特征 (性别、年龄、身高、体重、BMI)")
+print(f"  - 糖尿病相关信息 (类型、病程、并发症)")
+print(f"  - 临床指标 (HbA1c、空腹血糖、C肽、胰岛素水平)")
+print(f"  - 血脂指标 (总胆固醇、甘油三酯、HDL、LDL)")
+print(f"  - 肾功能指标 (肌酐、eGFR、尿酸)")
+
+# 标准化
+ts_X_input = scaler_ts_X.transform(ts_X_input.reshape(-1, ts_X_input.shape[-1])).reshape(ts_X_input.shape)
+static_X_input = scaler_static_X.transform(static_X_input)
+
+print(f"\n数据已标准化 (StandardScaler)")
+print(f"  时序数据标准化完成")
+print(f"  静态数据标准化完成")
 
 # 6. 加载模型
 print("\n[6] 加载模型 GCM_model_tf213_new.h5...")
