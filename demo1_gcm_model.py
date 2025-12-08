@@ -165,17 +165,35 @@ print(f"模型输出: {model.output.shape}")
 
 # 7. 进行预测
 print("\n[7] 进行预测...")
-y_pred_scaled = model.predict([ts_X_input, static_X_input])
-print(f"预测输出形状: {y_pred_scaled.shape}")
 
-# 反标准化
-y_pred = scaler_y.inverse_transform(y_pred_scaled)
+# 预测1: 使用完整输入（时序 + 患者静态特征）
+print("\n  [7.1] 使用完整输入（时序特征 + 患者静态特征）...")
+y_pred_full_scaled = model.predict([ts_X_input, static_X_input], verbose=0)
+y_pred_full = scaler_y.inverse_transform(y_pred_full_scaled)
 
-print("\n预测结果:")
-print(f"  15分钟后血糖: {y_pred[0][0]:.2f} mg/dL")
-print(f"  30分钟后血糖: {y_pred[0][1]:.2f} mg/dL")
-print(f"  45分钟后血糖: {y_pred[0][2]:.2f} mg/dL")
-print(f"  60分钟后血糖: {y_pred[0][3]:.2f} mg/dL")
+print("\n  完整输入预测结果:")
+print(f"    15分钟后血糖: {y_pred_full[0][0]:.2f} mg/dL")
+print(f"    30分钟后血糖: {y_pred_full[0][1]:.2f} mg/dL")
+print(f"    45分钟后血糖: {y_pred_full[0][2]:.2f} mg/dL")
+print(f"    60分钟后血糖: {y_pred_full[0][3]:.2f} mg/dL")
+
+# 预测2: 仅使用时序特征（静态特征设为零向量）
+print("\n  [7.2] 仅使用时序特征（不使用患者基本信息）...")
+static_X_input_zero = np.zeros_like(static_X_input)  # 创建零向量
+y_pred_no_static_scaled = model.predict([ts_X_input, static_X_input_zero], verbose=0)
+y_pred_no_static = scaler_y.inverse_transform(y_pred_no_static_scaled)
+
+print("\n  仅时序特征预测结果:")
+print(f"    15分钟后血糖: {y_pred_no_static[0][0]:.2f} mg/dL")
+print(f"    30分钟后血糖: {y_pred_no_static[0][1]:.2f} mg/dL")
+print(f"    45分钟后血糖: {y_pred_no_static[0][2]:.2f} mg/dL")
+print(f"    60分钟后血糖: {y_pred_no_static[0][3]:.2f} mg/dL")
+
+# 计算差异
+print("\n  预测差异分析:")
+for i, time in enumerate(['15分钟', '30分钟', '45分钟', '60分钟']):
+    diff = y_pred_full[0][i] - y_pred_no_static[0][i]
+    print(f"    {time}: {diff:+.2f} mg/dL (患者信息的影响)")
 
 # 8. 可视化结果
 print("\n[8] 绘制血糖预测图...")
@@ -191,20 +209,31 @@ fig, ax = plt.subplots(figsize=(14, 7))
 # 历史血糖值
 ax.plot(time_points, cgm_values, 'bo-', linewidth=2, markersize=8, label='Historical CGM', zorder=3)
 
-# 预测血糖值
-ax.plot(prediction_times, y_pred[0], 'rs-', linewidth=2, markersize=10,
-         label='Predicted (GCM_model.h5)', zorder=3)
+# 预测线1: 使用完整输入（时序 + 患者信息）
+ax.plot(prediction_times, y_pred_full[0], 'rs-', linewidth=2, markersize=10,
+         label='With Patient Info (Time-series + Static features)', zorder=3)
+
+# 预测线2: 仅使用时序特征（不使用患者信息）
+ax.plot(prediction_times, y_pred_no_static[0], 'go-', linewidth=2, markersize=10,
+         label='Without Patient Info (Time-series only)', zorder=3, alpha=0.7)
 
 # 连接线
-ax.plot([time_points[-1], prediction_times[0]], [cgm_values[-1], y_pred[0][0]],
+ax.plot([time_points[-1], prediction_times[0]], [cgm_values[-1], y_pred_full[0][0]],
          'r--', alpha=0.5, linewidth=1)
+ax.plot([time_points[-1], prediction_times[0]], [cgm_values[-1], y_pred_no_static[0][0]],
+         'g--', alpha=0.5, linewidth=1)
 
-# 添加数值标签
+# 添加数值标签 - 历史值
 for i, (t, v) in enumerate(zip(time_points, cgm_values)):
     ax.text(t, v + 5, f'{v:.1f}', ha='center', va='bottom', fontsize=9)
 
-for i, (t, v) in enumerate(zip(prediction_times, y_pred[0])):
-    ax.text(t, v + 5, f'{v:.1f}', ha='center', va='bottom', fontsize=9, color='red')
+# 添加数值标签 - 完整输入预测
+for i, (t, v) in enumerate(zip(prediction_times, y_pred_full[0])):
+    ax.text(t, v + 5, f'{v:.1f}', ha='center', va='bottom', fontsize=8, color='red', fontweight='bold')
+
+# 添加数值标签 - 仅时序预测
+for i, (t, v) in enumerate(zip(prediction_times, y_pred_no_static[0])):
+    ax.text(t, v - 8, f'{v:.1f}', ha='center', va='top', fontsize=8, color='green')
 
 # 添加正常血糖范围阴影
 ax.axhspan(70, 180, alpha=0.1, color='green', label='Normal Range (70-180 mg/dL)')
