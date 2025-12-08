@@ -211,11 +211,35 @@ print(f"    30分钟后血糖: {y_pred_no_static[0][1]:.2f} mg/dL")
 print(f"    45分钟后血糖: {y_pred_no_static[0][2]:.2f} mg/dL")
 print(f"    60分钟后血糖: {y_pred_no_static[0][3]:.2f} mg/dL")
 
+# 预测3: 模拟进餐场景（在最后一个时间步添加饮食摄入）
+print("\n  [7.3] 模拟进餐场景（添加饮食摄入）...")
+ts_X_input_with_meal = ts_X_input.copy()
+# Dietary intake 是索引1，在最后一个时间步（索引-1）设置为进餐标记
+# 需要先反标准化，修改，再标准化
+ts_X_input_raw = scaler_ts_X.inverse_transform(ts_X_input_with_meal.reshape(-1, ts_X_input_with_meal.shape[-1])).reshape(ts_X_input_with_meal.shape)
+ts_X_input_raw[0, -1, 1] = 1.0  # 设置最后一个时间步的饮食摄入为1
+ts_X_input_with_meal = scaler_ts_X.transform(ts_X_input_raw.reshape(-1, ts_X_input_raw.shape[-1])).reshape(ts_X_input_raw.shape)
+ts_X_input_with_meal_float32 = ts_X_input_with_meal.astype(np.float32)
+
+interpreter.set_tensor(input_details[0]['index'], ts_X_input_with_meal_float32)
+interpreter.set_tensor(input_details[1]['index'], static_X_input_float32)
+interpreter.invoke()
+y_pred_meal_scaled = interpreter.get_tensor(output_details[0]['index'])
+y_pred_meal = scaler_y.inverse_transform(y_pred_meal_scaled)
+
+print("\n  进餐场景预测结果:")
+print(f"    15分钟后血糖: {y_pred_meal[0][0]:.2f} mg/dL")
+print(f"    30分钟后血糖: {y_pred_meal[0][1]:.2f} mg/dL")
+print(f"    45分钟后血糖: {y_pred_meal[0][2]:.2f} mg/dL")
+print(f"    60分钟后血糖: {y_pred_meal[0][3]:.2f} mg/dL")
+
 # 计算差异
 print("\n  预测差异分析:")
+print("  vs 完整输入（无进餐）:")
 for i, time in enumerate(['15分钟', '30分钟', '45分钟', '60分钟']):
-    diff = y_pred_full[0][i] - y_pred_no_static[0][i]
-    print(f"    {time}: {diff:+.2f} mg/dL (患者信息的影响)")
+    diff1 = y_pred_full[0][i] - y_pred_no_static[0][i]
+    diff2 = y_pred_meal[0][i] - y_pred_full[0][i]
+    print(f"    {time}: 患者信息影响 {diff1:+.2f} mg/dL | 进餐影响 {diff2:+.2f} mg/dL")
 
 # 8. 可视化结果
 print("\n[8] 绘制血糖预测图...")
@@ -239,11 +263,17 @@ ax.plot(prediction_times, y_pred_full[0], 'rs-', linewidth=2, markersize=10,
 ax.plot(prediction_times, y_pred_no_static[0], 'go-', linewidth=2, markersize=10,
          label='Without Patient Info (Time-series only)', zorder=3, alpha=0.7)
 
+# 预测线3: 进餐场景（完整输入 + 饮食摄入）
+ax.plot(prediction_times, y_pred_meal[0], 'o-', color='orange', linewidth=2, markersize=10,
+         label='With Meal (Full input + Dietary intake)', zorder=3, alpha=0.8)
+
 # 连接线
 ax.plot([time_points[-1], prediction_times[0]], [cgm_values[-1], y_pred_full[0][0]],
          'r--', alpha=0.5, linewidth=1)
 ax.plot([time_points[-1], prediction_times[0]], [cgm_values[-1], y_pred_no_static[0][0]],
          'g--', alpha=0.5, linewidth=1)
+ax.plot([time_points[-1], prediction_times[0]], [cgm_values[-1], y_pred_meal[0][0]],
+         '--', color='orange', alpha=0.5, linewidth=1)
 
 # 添加数值标签 - 历史值
 for i, (t, v) in enumerate(zip(time_points, cgm_values)):
@@ -256,6 +286,12 @@ for i, (t, v) in enumerate(zip(prediction_times, y_pred_full[0])):
 # 添加数值标签 - 仅时序预测
 for i, (t, v) in enumerate(zip(prediction_times, y_pred_no_static[0])):
     ax.text(t, v - 8, f'{v:.1f}', ha='center', va='top', fontsize=8, color='green')
+
+# 添加数值标签 - 进餐场景预测
+for i, (t, v) in enumerate(zip(prediction_times, y_pred_meal[0])):
+    offset = 5 if i % 2 == 0 else -8  # 交替上下避免重叠
+    va = 'bottom' if offset > 0 else 'top'
+    ax.text(t + 3, v + offset, f'{v:.1f}', ha='left', va=va, fontsize=8, color='orange', fontweight='bold')
 
 # 添加正常血糖范围阴影
 ax.axhspan(70, 180, alpha=0.1, color='green', label='Normal Range (70-180 mg/dL)')
