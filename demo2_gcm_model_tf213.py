@@ -186,35 +186,50 @@ prediction_times = [time_points[-1] + 15, time_points[-1] + 30,
                    time_points[-1] + 45, time_points[-1] + 60]  # 预测的时间点
 
 # 绘图
-plt.figure(figsize=(12, 6))
+fig, ax = plt.subplots(figsize=(14, 7))
 
 # 历史血糖值
-plt.plot(time_points, cgm_values, 'bo-', linewidth=2, markersize=8, label='Historical CGM', zorder=3)
+ax.plot(time_points, cgm_values, 'bo-', linewidth=2, markersize=8, label='Historical CGM', zorder=3)
 
 # 预测血糖值
-plt.plot(prediction_times, y_pred[0], 'rs-', linewidth=2, markersize=10,
+ax.plot(prediction_times, y_pred[0], 'rs-', linewidth=2, markersize=10,
          label='Predicted (GCM_model_tf213_new.h5)', zorder=3)
 
 # 连接线
-plt.plot([time_points[-1], prediction_times[0]], [cgm_values[-1], y_pred[0][0]],
+ax.plot([time_points[-1], prediction_times[0]], [cgm_values[-1], y_pred[0][0]],
          'r--', alpha=0.5, linewidth=1)
 
 # 添加数值标签
 for i, (t, v) in enumerate(zip(time_points, cgm_values)):
-    plt.text(t, v + 5, f'{v:.1f}', ha='center', va='bottom', fontsize=9)
+    ax.text(t, v + 5, f'{v:.1f}', ha='center', va='bottom', fontsize=9)
 
 for i, (t, v) in enumerate(zip(prediction_times, y_pred[0])):
-    plt.text(t, v + 5, f'{v:.1f}', ha='center', va='bottom', fontsize=9, color='red')
+    ax.text(t, v + 5, f'{v:.1f}', ha='center', va='bottom', fontsize=9, color='red')
 
 # 添加正常血糖范围阴影
-plt.axhspan(70, 180, alpha=0.1, color='green', label='Normal Range (70-180 mg/dL)')
+ax.axhspan(70, 180, alpha=0.1, color='green', label='Normal Range (70-180 mg/dL)')
 
-plt.xlabel('Time (minutes)', fontsize=12)
-plt.ylabel('Blood Glucose (mg/dL)', fontsize=12)
-plt.title('Blood Glucose Prediction - Patient 2035_0_20210629\nModel: GCM_model_tf213_new.h5',
+# 添加患者信息文本框
+patient_info_text = f"""Patient Info:
+ID: 2035_0_20210629
+Gender: {gender_text} | Age: {patient_info['Age (years)']:.0f}y | BMI: {patient_info['BMI (kg/m2)']:.1f}
+Type: {diabetes_type.split()[0]} | Duration: {patient_info['Duration of Diabetes  (years)']:.0f}y
+HbA1c: {patient_info['HbA1c (mmol/mol)']:.1f} mmol/mol | FPG: {patient_info['Fasting Plasma Glucose (mg/dl)']:.1f} mg/dL
+
+Input: 10 timesteps × 51 features + 30 static features"""
+
+# 在图表右上角添加文本框
+ax.text(0.98, 0.97, patient_info_text, transform=ax.transAxes,
+        fontsize=9, verticalalignment='top', horizontalalignment='right',
+        bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.8),
+        family='monospace')
+
+ax.set_xlabel('Time (minutes)', fontsize=12)
+ax.set_ylabel('Blood Glucose (mg/dL)', fontsize=12)
+ax.set_title('Blood Glucose Prediction - Patient 2035_0_20210629\nModel: GCM_model_tf213_new.h5',
           fontsize=14, fontweight='bold')
-plt.legend(loc='best', fontsize=10)
-plt.grid(True, alpha=0.3)
+ax.legend(loc='upper left', fontsize=10)
+ax.grid(True, alpha=0.3)
 plt.tight_layout()
 
 # 保存图片
