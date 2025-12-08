@@ -207,13 +207,30 @@ print(f"    30分钟后血糖: {y_pred_meal[0][1]:.2f} mg/dL")
 print(f"    45分钟后血糖: {y_pred_meal[0][2]:.2f} mg/dL")
 print(f"    60分钟后血糖: {y_pred_meal[0][3]:.2f} mg/dL")
 
+# 预测4: 模拟高热量进餐场景（Dietary intake = 3）
+print("\n  [7.4] 模拟高热量进餐场景（Dietary intake = 3）...")
+ts_X_input_high_meal = ts_X_input.copy()
+ts_X_input_raw_high = scaler_ts_X.inverse_transform(ts_X_input_high_meal.reshape(-1, ts_X_input_high_meal.shape[-1])).reshape(ts_X_input_high_meal.shape)
+ts_X_input_raw_high[0, -1, 1] = 3.0  # 设置最后一个时间步的饮食摄入为3（高热量）
+ts_X_input_high_meal = scaler_ts_X.transform(ts_X_input_raw_high.reshape(-1, ts_X_input_raw_high.shape[-1])).reshape(ts_X_input_raw_high.shape)
+
+y_pred_high_meal_scaled = model.predict([ts_X_input_high_meal, static_X_input], verbose=0)
+y_pred_high_meal = scaler_y.inverse_transform(y_pred_high_meal_scaled)
+
+print("\n  高热量进餐场景预测结果:")
+print(f"    15分钟后血糖: {y_pred_high_meal[0][0]:.2f} mg/dL")
+print(f"    30分钟后血糖: {y_pred_high_meal[0][1]:.2f} mg/dL")
+print(f"    45分钟后血糖: {y_pred_high_meal[0][2]:.2f} mg/dL")
+print(f"    60分钟后血糖: {y_pred_high_meal[0][3]:.2f} mg/dL")
+
 # 计算差异
 print("\n  预测差异分析:")
 print("  vs 完整输入（无进餐）:")
 for i, time in enumerate(['15分钟', '30分钟', '45分钟', '60分钟']):
     diff1 = y_pred_full[0][i] - y_pred_no_static[0][i]
     diff2 = y_pred_meal[0][i] - y_pred_full[0][i]
-    print(f"    {time}: 患者信息影响 {diff1:+.2f} mg/dL | 进餐影响 {diff2:+.2f} mg/dL")
+    diff3 = y_pred_high_meal[0][i] - y_pred_full[0][i]
+    print(f"    {time}: 患者信息影响 {diff1:+.2f} mg/dL | 普通进餐 {diff2:+.2f} mg/dL | 高热量进餐 {diff3:+.2f} mg/dL")
 
 # 8. 可视化结果
 print("\n[8] 绘制血糖预测图...")
@@ -239,7 +256,11 @@ ax.plot(prediction_times, y_pred_no_static[0], 'go-', linewidth=2, markersize=10
 
 # 预测线3: 进餐场景（完整输入 + 饮食摄入）
 ax.plot(prediction_times, y_pred_meal[0], 'o-', color='orange', linewidth=2, markersize=10,
-         label='With Meal (Full input + Dietary intake)', zorder=3, alpha=0.8)
+         label='With Meal (Full input + Dietary intake=1)', zorder=3, alpha=0.8)
+
+# 预测线4: 高热量进餐场景（完整输入 + 高热量饮食）
+ax.plot(prediction_times, y_pred_high_meal[0], 'o-', color='purple', linewidth=2, markersize=10,
+         label='With High-Calorie Meal (Dietary intake=3)', zorder=3, alpha=0.8)
 
 # 连接线
 ax.plot([time_points[-1], prediction_times[0]], [cgm_values[-1], y_pred_full[0][0]],
@@ -248,6 +269,8 @@ ax.plot([time_points[-1], prediction_times[0]], [cgm_values[-1], y_pred_no_stati
          'g--', alpha=0.5, linewidth=1)
 ax.plot([time_points[-1], prediction_times[0]], [cgm_values[-1], y_pred_meal[0][0]],
          '--', color='orange', alpha=0.5, linewidth=1)
+ax.plot([time_points[-1], prediction_times[0]], [cgm_values[-1], y_pred_high_meal[0][0]],
+         '--', color='purple', alpha=0.5, linewidth=1)
 
 # 添加数值标签 - 历史值
 for i, (t, v) in enumerate(zip(time_points, cgm_values)):
@@ -266,6 +289,12 @@ for i, (t, v) in enumerate(zip(prediction_times, y_pred_meal[0])):
     offset = 5 if i % 2 == 0 else -8  # 交替上下避免重叠
     va = 'bottom' if offset > 0 else 'top'
     ax.text(t + 3, v + offset, f'{v:.1f}', ha='left', va=va, fontsize=8, color='orange', fontweight='bold')
+
+# 添加数值标签 - 高热量进餐场景预测
+for i, (t, v) in enumerate(zip(prediction_times, y_pred_high_meal[0])):
+    offset = -8 if i % 2 == 0 else 5  # 交替上下避免重叠，与普通进餐相反
+    va = 'top' if offset < 0 else 'bottom'
+    ax.text(t - 3, v + offset, f'{v:.1f}', ha='right', va=va, fontsize=8, color='purple', fontweight='bold')
 
 # 添加正常血糖范围阴影
 ax.axhspan(70, 180, alpha=0.1, color='green', label='Normal Range (70-180 mg/dL)')
