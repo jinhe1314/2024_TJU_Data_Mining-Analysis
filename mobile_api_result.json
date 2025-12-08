@@ -1,0 +1,134 @@
+{
+  "patient_info": {
+    "patient_id": "Unknown",
+    "gender": "女性",
+    "age": 78,
+    "height": 1.66,
+    "weight": 67.0,
+    "bmi": 24.3141239657424,
+    "diabetes_type": "T2DM",
+    "diabetes_duration": 1,
+    "hba1c": 1.0,
+    "fasting_glucose": 20.0
+  },
+  "historical_data": {
+    "timestamps": [
+      "2021-06-29 17:04:00",
+      "2021-06-29 17:19:00",
+      "2021-06-29 17:34:00",
+      "2021-06-29 17:49:00",
+      "2021-06-29 18:04:00",
+      "2021-06-29 18:19:00",
+      "2021-06-29 18:34:00",
+      "2021-06-29 18:49:00",
+      "2021-06-29 19:04:00"
+    ],
+    "glucose_values": [
+      142.2,
+      158.4,
+      172.8,
+      172.8,
+      172.8,
+      172.8,
+      172.8,
+      165.6,
+      153.0
+    ],
+    "time_range": {
+      "start": "2021-06-29 17:04:00",
+      "end": "2021-06-29 19:04:00"
+    }
+  },
+  "predictions": {
+    "timestamps": [
+      "2021-06-29 19:19:00",
+      "2021-06-29 19:34:00",
+      "2021-06-29 19:49:00",
+      "2021-06-29 20:04:00"
+    ],
+    "time_horizons": [
+      "15min",
+      "30min",
+      "45min",
+      "60min"
+    ],
+    "scenarios": {
+      "full_input": {
+        "description": "With Patient Info (Time-series + Static features)",
+        "values": [
+          134.85659790039062,
+          129.42800903320312,
+          123.81523895263672,
+          119.46502685546875
+        ]
+      },
+      "no_patient_info": {
+        "description": "Without Patient Info (Time-series only)",
+        "values": [
+          136.32595825195312,
+          132.05369567871094,
+          127.38247680664062,
+          123.6495590209961
+        ]
+      },
+      "normal_meal": {
+        "description": "Normal Meal (Dietary intake=1)",
+        "values": [
+          137.13648986816406,
+          137.24554443359375,
+          136.89822387695312,
+          136.13662719726562
+        ]
+      },
+      "high_calorie_meal": {
+        "description": "High-Calorie Meal (Dietary intake=3)",
+        "values": [
+          144.26792907714844,
+          145.93197631835938,
+          148.26980590820312,
+          149.5189971923828
+        ]
+      }
+    }
+  },
+  "impact_analysis": {
+    "patient_info_impact": [
+      -1.4693603515625,
+      -2.6256866455078125,
+      -3.5672378540039062,
+      -4.184532165527344
+    ],
+    "normal_meal_impact": [
+      2.2798919677734375,
+      7.817535400390625,
+      13.082984924316406,
+      16.671600341796875
+    ],
+    "high_calorie_meal_impact": [
+      9.411331176757812,
+      16.50396728515625,
+      24.454566955566406,
+      30.053970336914062
+    ]
+  },
+  "model_info": {
+    "model_type": "TFLite",
+    "model_file": "mobile_deployment/mobile_deployment/src/models/glucose_predictor.tflite",
+    "model_size": "202KB",
+    "input_shape": {
+      "time_series": [
+        1,
+        10,
+        51
+      ],
+      "static": [
+        1,
+        30
+      ]
+    }
+  },
+  "metadata": {
+    "timestamp": "2025-12-08 16:04:17",
+    "api_version": "1.0.0"
+  }
+}
