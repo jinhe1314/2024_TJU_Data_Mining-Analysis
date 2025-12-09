@@ -3,4 +3,5 @@
     <string name="predict">Predict</string>
     <string name="patient_info">Patient Information</string>
     <string name="prediction_results">Prediction Results</string>
+    <string name="click_to_predict">点击"重新预测"开始...</string>
 </resources>

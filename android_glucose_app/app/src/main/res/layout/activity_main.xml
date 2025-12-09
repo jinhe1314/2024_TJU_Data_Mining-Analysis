@@ -81,7 +81,7 @@
             android:textSize="12sp"
             android:fontFamily="monospace"
             android:background="@android:color/white"
-            android:text="点击"重新预测"开始..." />
+            android:text="@string/click_to_predict" />
     </ScrollView>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
