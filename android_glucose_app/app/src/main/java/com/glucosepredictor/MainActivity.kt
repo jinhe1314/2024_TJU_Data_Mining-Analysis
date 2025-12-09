@@ -344,47 +344,62 @@ class MainActivity : AppCompatActivity() {
     }
 
     /**
-     * 获取示例患者数据
+     * 获取示例患者数据 - 从JSON文件加载真实数据
      */
     private fun getSamplePatientData(): PatientData {
-        // 患者2035_0_20210629的真实数据
-        val historicalGlucose = floatArrayOf(
-            142.2f, 158.4f, 172.8f, 172.8f, 172.8f,
-            172.8f, 172.8f, 165.6f, 153.0f
-        )
+        try {
+            // 从assets加载真实患者数据
+            val jsonString = assets.open("patient_2035_data.json").bufferedReader().use { it.readText() }
+            val json = org.json.JSONObject(jsonString)
 
-        // 时序特征 (10 timesteps × 51 features = 510)
-        // 这里简化处理，实际应该从完整数据加载
-        val timeSeriesFeatures = FloatArray(510) { 0f }
-        // 填充CGM值（索引0是CGM特征）
-        for (i in 0..9) {
-            if (i < historicalGlucose.size) {
-                timeSeriesFeatures[i * 51] = historicalGlucose[i]
-            } else {
-                timeSeriesFeatures[i * 51] = historicalGlucose.last()
+            // 解析历史血糖值
+            val glucoseArray = json.getJSONArray("historical_glucose")
+            val historicalGlucose = FloatArray(glucoseArray.length()) { i ->
+                glucoseArray.getDouble(i).toFloat()
             }
+
+            // 解析时序特征
+            val tsArray = json.getJSONArray("time_series_features")
+            val timeSeriesFeatures = FloatArray(tsArray.length()) { i ->
+                tsArray.getDouble(i).toFloat()
+            }
+
+            // 解析静态特征
+            val staticArray = json.getJSONArray("static_features")
+            val staticFeatures = FloatArray(staticArray.length()) { i ->
+                staticArray.getDouble(i).toFloat()
+            }
+
+            Log.d(tag, "✓ 患者数据加载成功")
+            Log.d(tag, "  CGM值: ${historicalGlucose.take(3).joinToString(", ")}")
+            Log.d(tag, "  时序特征: ${timeSeriesFeatures.size} 个值")
+            Log.d(tag, "  静态特征: ${staticFeatures.size} 个值")
+
+            return PatientData(
+                patientId = json.getString("patient_id"),
+                historicalGlucose = historicalGlucose,
+                timeSeriesFeatures = timeSeriesFeatures,
+                staticFeatures = staticFeatures
+            )
+        } catch (e: Exception) {
+            Log.e(tag, "患者数据加载失败: ${e.message}")
+            e.printStackTrace()
+
+            // 返回默认数据作为后备
+            val historicalGlucose = floatArrayOf(
+                142.2f, 158.4f, 172.8f, 172.8f, 172.8f,
+                172.8f, 172.8f, 165.6f, 153.0f
+            )
+            val timeSeriesFeatures = FloatArray(510) { 0f }
+            val staticFeatures = FloatArray(30) { 0f }
+
+            return PatientData(
+                patientId = "2035_0_20210629",
+                historicalGlucose = historicalGlucose,
+                timeSeriesFeatures = timeSeriesFeatures,
+                staticFeatures = staticFeatures
+            )
         }
-
-        // 静态特征 (30个)
-        val staticFeatures = floatArrayOf(
-            1f,      // 性别 (男性=1)
-            78f,     // 年龄
-            1.66f,   // 身高
-            67.0f,   // 体重
-            24.3f,   // BMI
-            1f,      // 糖尿病类型 (T1DM=1)
-            20f,     // 病程
-            100.0f,  // HbA1c
-            133.2f,  // 空腹血糖
-            *FloatArray(21) { 0f } // 其他特征
-        )
-
-        return PatientData(
-            patientId = "2035_0_20210629",
-            historicalGlucose = historicalGlucose,
-            timeSeriesFeatures = timeSeriesFeatures,
-            staticFeatures = staticFeatures
-        )
     }
 
     override fun onDestroy() {
