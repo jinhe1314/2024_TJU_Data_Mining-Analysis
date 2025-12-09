@@ -3,6 +3,7 @@ package com.glucosepredictor
 import android.content.Context
 import android.util.Log
 import org.tensorflow.lite.Interpreter
+import org.json.JSONObject
 import java.io.FileInputStream
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
@@ -41,8 +42,8 @@ class GlucosePredictor(context: Context) {
             }
             interpreter = Interpreter(modelFile, options)
 
-            // 初始化标准化参数（实际应用中应从文件加载）
-            initScalerParams()
+            // 从JSON文件加载标准化参数
+            loadScalerParams(context)
 
             Log.d(tag, "✓ 模型加载成功")
         } catch (e: Exception) {
@@ -64,22 +65,62 @@ class GlucosePredictor(context: Context) {
     }
 
     /**
-     * 初始化标准化参数
-     * 注意：实际应用中应从训练时保存的参数文件加载
+     * 从JSON文件加载标准化参数
      */
-    private fun initScalerParams() {
-        // 这里使用简化的初始化，实际应该从JSON文件加载
-        for (i in tsXMean.indices) {
-            tsXMean[i] = 0f
-            tsXStd[i] = 1f
-        }
-        for (i in staticMean.indices) {
-            staticMean[i] = 0f
-            staticStd[i] = 1f
-        }
-        for (i in yMean.indices) {
-            yMean[i] = 130f  // 血糖均值约130 mg/dL
-            yStd[i] = 30f    // 标准差约30 mg/dL
+    private fun loadScalerParams(context: Context) {
+        try {
+            // 读取JSON文件
+            val jsonString = context.assets.open("scaler_params.json").bufferedReader().use { it.readText() }
+            val json = JSONObject(jsonString)
+
+            // 加载时序特征参数
+            val tsJson = json.getJSONObject("time_series")
+            val tsMeanArray = tsJson.getJSONArray("mean")
+            val tsStdArray = tsJson.getJSONArray("std")
+            for (i in 0 until tsMeanArray.length()) {
+                tsXMean[i] = tsMeanArray.getDouble(i).toFloat()
+                tsXStd[i] = tsStdArray.getDouble(i).toFloat()
+            }
+
+            // 加载静态特征参数
+            val staticJson = json.getJSONObject("static")
+            val staticMeanArray = staticJson.getJSONArray("mean")
+            val staticStdArray = staticJson.getJSONArray("std")
+            for (i in 0 until staticMeanArray.length()) {
+                staticMean[i] = staticMeanArray.getDouble(i).toFloat()
+                staticStd[i] = staticStdArray.getDouble(i).toFloat()
+            }
+
+            // 加载目标参数
+            val targetJson = json.getJSONObject("target")
+            val targetMeanArray = targetJson.getJSONArray("mean")
+            val targetStdArray = targetJson.getJSONArray("std")
+            for (i in 0 until targetMeanArray.length()) {
+                yMean[i] = targetMeanArray.getDouble(i).toFloat()
+                yStd[i] = targetStdArray.getDouble(i).toFloat()
+            }
+
+            Log.d(tag, "✓ Scaler参数加载成功")
+            Log.d(tag, "  时序: mean[0]=${tsXMean[0]}, std[0]=${tsXStd[0]}")
+            Log.d(tag, "  目标: mean[0]=${yMean[0]}, std[0]=${yStd[0]}")
+
+        } catch (e: Exception) {
+            Log.e(tag, "Scaler参数加载失败: ${e.message}")
+            e.printStackTrace()
+
+            // 使用默认值作为后备
+            for (i in tsXMean.indices) {
+                tsXMean[i] = 0f
+                tsXStd[i] = 1f
+            }
+            for (i in staticMean.indices) {
+                staticMean[i] = 0f
+                staticStd[i] = 1f
+            }
+            for (i in yMean.indices) {
+                yMean[i] = 130f
+                yStd[i] = 30f
+            }
         }
     }
 
