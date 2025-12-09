@@ -25,11 +25,12 @@ import kotlinx.coroutines.withContext
 class MainActivity : AppCompatActivity() {
 
     private lateinit var chart: LineChart
-    private lateinit var resultText: TextView
     private lateinit var predictButton: Button
+    private lateinit var showDetailsButton: Button
     private lateinit var patientInfoText: TextView
 
     private var predictor: GlucosePredictor? = null
+    private var currentPredictions: PredictionResult? = null
     private val tag = "MainActivity"
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -38,8 +39,8 @@ class MainActivity : AppCompatActivity() {
 
         // 初始化视图
         chart = findViewById(R.id.chart)
-        resultText = findViewById(R.id.resultText)
         predictButton = findViewById(R.id.predictButton)
+        showDetailsButton = findViewById(R.id.showDetailsButton)
         patientInfoText = findViewById(R.id.patientInfoText)
 
         // 初始化预测器
@@ -54,6 +55,11 @@ class MainActivity : AppCompatActivity() {
         // 预测按钮点击事件
         predictButton.setOnClickListener {
             performPrediction()
+        }
+
+        // 显示详情按钮点击事件
+        showDetailsButton.setOnClickListener {
+            showPredictionDetailsDialog()
         }
 
         // 自动执行一次预测
@@ -135,7 +141,6 @@ class MainActivity : AppCompatActivity() {
      */
     private fun performPrediction() {
         predictButton.isEnabled = false
-        resultText.text = "预测中..."
 
         CoroutineScope(Dispatchers.Default).launch {
             try {
@@ -150,20 +155,17 @@ class MainActivity : AppCompatActivity() {
 
                 withContext(Dispatchers.Main) {
                     if (result != null) {
+                        // 保存预测结果
+                        currentPredictions = result
+
                         // 更新图表
                         updateChart(patientData.historicalGlucose, result)
-
-                        // 显示预测结果
-                        displayResults(result)
-                    } else {
-                        resultText.text = "预测失败"
                     }
                     predictButton.isEnabled = true
                 }
             } catch (e: Exception) {
                 Log.e(tag, "预测出错: ${e.message}")
                 withContext(Dispatchers.Main) {
-                    resultText.text = "预测出错: ${e.message}"
                     predictButton.isEnabled = true
                 }
             }
@@ -184,10 +186,10 @@ class MainActivity : AppCompatActivity() {
         val historicalDataSet = LineDataSet(historicalEntries, "Historical CGM").apply {
             color = Color.BLUE
             setCircleColor(Color.BLUE)
-            lineWidth = 2f
+            lineWidth = 2.5f
             circleRadius = 4f
             setDrawCircleHole(true)
-            setDrawValues(true)
+            setDrawValues(false)
             valueTextSize = 8f
             mode = LineDataSet.Mode.LINEAR
         }
@@ -196,44 +198,53 @@ class MainActivity : AppCompatActivity() {
         // 预测时间点 (135, 150, 165, 180分钟)
         val predictionTimes = floatArrayOf(135f, 150f, 165f, 180f)
 
-        // 2. 完整输入预测 (红线)
+        // 历史数据最后一个点 (120分钟)
+        val lastHistoricalTime = 120f
+        val lastHistoricalValue = historicalGlucose.last()
+
+        // 2. 完整输入预测 (红线，虚线连接)
         val fullEntries = ArrayList<Entry>()
+        fullEntries.add(Entry(lastHistoricalTime, lastHistoricalValue))  // 连接点
         for (i in predictions.fullInput.indices) {
             fullEntries.add(Entry(predictionTimes[i], predictions.fullInput[i]))
         }
         val fullDataSet = LineDataSet(fullEntries, "With Patient Info").apply {
             color = Color.RED
             setCircleColor(Color.RED)
-            lineWidth = 2f
+            lineWidth = 2.5f
             circleRadius = 5f
             setDrawCircleHole(false)
-            setDrawValues(true)
+            setDrawValues(false)
             valueTextSize = 8f
             valueTextColor = Color.RED
             mode = LineDataSet.Mode.LINEAR
+            enableDashedLine(10f, 10f, 0f)  // 虚线效果
         }
         dataSets.add(fullDataSet)
 
-        // 3. 无患者信息预测 (绿线)
+        // 3. 无患者信息预测 (绿线，虚线连接)
         val noStaticEntries = ArrayList<Entry>()
+        noStaticEntries.add(Entry(lastHistoricalTime, lastHistoricalValue))
         for (i in predictions.noPatientInfo.indices) {
             noStaticEntries.add(Entry(predictionTimes[i], predictions.noPatientInfo[i]))
         }
         val noStaticDataSet = LineDataSet(noStaticEntries, "Without Patient Info").apply {
             color = Color.GREEN
             setCircleColor(Color.GREEN)
-            lineWidth = 2f
+            lineWidth = 2.5f
             circleRadius = 5f
             setDrawCircleHole(false)
-            setDrawValues(true)
+            setDrawValues(false)
             valueTextSize = 8f
             valueTextColor = Color.GREEN
             mode = LineDataSet.Mode.LINEAR
+            enableDashedLine(10f, 10f, 0f)
         }
         dataSets.add(noStaticDataSet)
 
-        // 4. 低热量进餐预测 (橙线)
+        // 4. 低热量进餐预测 (橙线，虚线连接)
         val lowMealEntries = ArrayList<Entry>()
+        lowMealEntries.add(Entry(lastHistoricalTime, lastHistoricalValue))
         for (i in predictions.lowCalorieMeal.indices) {
             lowMealEntries.add(Entry(predictionTimes[i], predictions.lowCalorieMeal[i]))
         }
@@ -246,11 +257,13 @@ class MainActivity : AppCompatActivity() {
             setDrawValues(false)
             valueTextSize = 7f
             mode = LineDataSet.Mode.LINEAR
+            enableDashedLine(10f, 10f, 0f)
         }
         dataSets.add(lowMealDataSet)
 
-        // 5. 中热量进餐预测 (紫线)
+        // 5. 中热量进餐预测 (紫线，虚线连接)
         val midMealEntries = ArrayList<Entry>()
+        midMealEntries.add(Entry(lastHistoricalTime, lastHistoricalValue))
         for (i in predictions.mediumCalorieMeal.indices) {
             midMealEntries.add(Entry(predictionTimes[i], predictions.mediumCalorieMeal[i]))
         }
@@ -263,11 +276,13 @@ class MainActivity : AppCompatActivity() {
             setDrawValues(false)
             valueTextSize = 7f
             mode = LineDataSet.Mode.LINEAR
+            enableDashedLine(10f, 10f, 0f)
         }
         dataSets.add(midMealDataSet)
 
-        // 6. 高热量进餐预测 (棕线)
+        // 6. 高热量进餐预测 (棕线，虚线连接)
         val highMealEntries = ArrayList<Entry>()
+        highMealEntries.add(Entry(lastHistoricalTime, lastHistoricalValue))
         for (i in predictions.highCalorieMeal.indices) {
             highMealEntries.add(Entry(predictionTimes[i], predictions.highCalorieMeal[i]))
         }
@@ -280,6 +295,7 @@ class MainActivity : AppCompatActivity() {
             setDrawValues(false)
             valueTextSize = 7f
             mode = LineDataSet.Mode.LINEAR
+            enableDashedLine(10f, 10f, 0f)
         }
         dataSets.add(highMealDataSet)
 
@@ -290,43 +306,67 @@ class MainActivity : AppCompatActivity() {
     }
 
     /**
-     * 显示预测结果文本
+     * 显示预测详情对话框
      */
-    private fun displayResults(predictions: PredictionResult) {
+    private fun showPredictionDetailsDialog() {
+        val predictions = currentPredictions
+        if (predictions == null) {
+            androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle("提示")
+                .setMessage("请先点击\"重新预测\"按钮进行预测")
+                .setPositiveButton("确定", null)
+                .show()
+            return
+        }
+
         val result = StringBuilder()
         result.append("预测结果 (15/30/45/60 分钟):\n\n")
 
         result.append("完整输入:\n")
         result.append(formatPredictions(predictions.fullInput))
-        result.append("\n")
+        result.append("\n\n")
 
         result.append("无患者信息:\n")
         result.append(formatPredictions(predictions.noPatientInfo))
-        result.append("\n")
+        result.append("\n\n")
 
         result.append("低热量进餐 (30分钟前轻食):\n")
         result.append(formatPredictions(predictions.lowCalorieMeal))
-        result.append("\n")
+        result.append("\n\n")
 
         result.append("中热量进餐 (15分钟前正常进餐):\n")
         result.append(formatPredictions(predictions.mediumCalorieMeal))
-        result.append("\n")
+        result.append("\n\n")
 
         result.append("高热量进餐 (持续大餐):\n")
         result.append(formatPredictions(predictions.highCalorieMeal))
-        result.append("\n")
+        result.append("\n\n")
 
         // 影响分析 (仅显示60分钟后的影响)
-        result.append("\n60分钟后血糖影响:\n")
+        result.append("60分钟后血糖影响:\n")
         val lowImpact = predictions.lowCalorieMeal[3] - predictions.fullInput[3]
         val midImpact = predictions.mediumCalorieMeal[3] - predictions.fullInput[3]
         val highImpact = predictions.highCalorieMeal[3] - predictions.fullInput[3]
 
         result.append("低热量: %+.1f mg/dL\n".format(lowImpact))
         result.append("中热量: %+.1f mg/dL\n".format(midImpact))
-        result.append("高热量: %+.1f mg/dL\n".format(highImpact))
+        result.append("高热量: %+.1f mg/dL".format(highImpact))
 
-        resultText.text = result.toString()
+        // 创建对话框
+        val scrollView = android.widget.ScrollView(this)
+        val textView = android.widget.TextView(this).apply {
+            text = result.toString()
+            setPadding(40, 20, 40, 20)
+            textSize = 14f
+            typeface = android.graphics.Typeface.MONOSPACE
+        }
+        scrollView.addView(textView)
+
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle("预测详情")
+            .setView(scrollView)
+            .setPositiveButton("关闭", null)
+            .show()
     }
 
     /**
