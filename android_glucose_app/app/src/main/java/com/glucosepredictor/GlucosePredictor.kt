@@ -170,6 +170,7 @@ class GlucosePredictor(context: Context) {
 
     /**
      * 预测所有场景
+     * 基于demo3_tflite_model.py的时间模拟策略
      */
     fun predictAllScenarios(
         timeSeriesData: FloatArray,
@@ -182,20 +183,32 @@ class GlucosePredictor(context: Context) {
         val staticZero = FloatArray(30) { 0f }
         val predNoStatic = predict(timeSeriesData, staticZero) ?: floatArrayOf(0f, 0f, 0f, 0f)
 
-        // 场景3: 普通进餐 (Dietary intake = 1)
-        val tsMeal = timeSeriesData.copyOf()
-        tsMeal[tsMeal.size - 51 + 1] = 1.0f  // 最后一个时间步的Dietary intake索引
-        val predMeal = predict(tsMeal, staticData) ?: floatArrayOf(0f, 0f, 0f, 0f)
+        // 场景3: 低热量进餐 (30分钟前轻食)
+        // Dietary intake索引=1，在倒数第3个时间步（索引-3）设置为1
+        val tsLowMeal = timeSeriesData.copyOf()
+        val dietaryIdxLow = tsLowMeal.size - 3 * 51 + 1  // 倒数第3个时间步的Dietary intake
+        tsLowMeal[dietaryIdxLow] = 1.0f
+        val predLowMeal = predict(tsLowMeal, staticData) ?: floatArrayOf(0f, 0f, 0f, 0f)
 
-        // 场景4: 高热量进餐 (Dietary intake = 3)
+        // 场景4: 中热量进餐 (15分钟前正常进餐)
+        // Dietary intake索引=1，在倒数第2个时间步（索引-2）设置为1
+        val tsMidMeal = timeSeriesData.copyOf()
+        val dietaryIdxMid = tsMidMeal.size - 2 * 51 + 1  // 倒数第2个时间步的Dietary intake
+        tsMidMeal[dietaryIdxMid] = 1.0f
+        val predMidMeal = predict(tsMidMeal, staticData) ?: floatArrayOf(0f, 0f, 0f, 0f)
+
+        // 场景5: 高热量进餐 (持续进餐，30-15分钟前)
+        // 在倒数第3和倒数第2个时间步都设置Dietary intake=1
         val tsHighMeal = timeSeriesData.copyOf()
-        tsHighMeal[tsHighMeal.size - 51 + 1] = 3.0f
+        tsHighMeal[dietaryIdxLow] = 1.0f  // 30分钟前开始进餐
+        tsHighMeal[dietaryIdxMid] = 1.0f  // 15分钟前仍在进餐
         val predHighMeal = predict(tsHighMeal, staticData) ?: floatArrayOf(0f, 0f, 0f, 0f)
 
         return PredictionResult(
             fullInput = predFull,
             noPatientInfo = predNoStatic,
-            normalMeal = predMeal,
+            lowCalorieMeal = predLowMeal,
+            mediumCalorieMeal = predMidMeal,
             highCalorieMeal = predHighMeal
         )
     }
@@ -212,8 +225,9 @@ class GlucosePredictor(context: Context) {
 data class PredictionResult(
     val fullInput: FloatArray,           // 完整输入预测
     val noPatientInfo: FloatArray,       // 无患者信息预测
-    val normalMeal: FloatArray,          // 普通进餐预测
-    val highCalorieMeal: FloatArray      // 高热量进餐预测
+    val lowCalorieMeal: FloatArray,      // 低热量进餐预测 (30分钟前轻食)
+    val mediumCalorieMeal: FloatArray,   // 中热量进餐预测 (15分钟前正常进餐)
+    val highCalorieMeal: FloatArray      // 高热量进餐预测 (持续大餐)
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -223,7 +237,8 @@ data class PredictionResult(
 
         if (!fullInput.contentEquals(other.fullInput)) return false
         if (!noPatientInfo.contentEquals(other.noPatientInfo)) return false
-        if (!normalMeal.contentEquals(other.normalMeal)) return false
+        if (!lowCalorieMeal.contentEquals(other.lowCalorieMeal)) return false
+        if (!mediumCalorieMeal.contentEquals(other.mediumCalorieMeal)) return false
         if (!highCalorieMeal.contentEquals(other.highCalorieMeal)) return false
 
         return true
@@ -232,7 +247,8 @@ data class PredictionResult(
     override fun hashCode(): Int {
         var result = fullInput.contentHashCode()
         result = 31 * result + noPatientInfo.contentHashCode()
-        result = 31 * result + normalMeal.contentHashCode()
+        result = 31 * result + lowCalorieMeal.contentHashCode()
+        result = 31 * result + mediumCalorieMeal.contentHashCode()
         result = 31 * result + highCalorieMeal.contentHashCode()
         return result
     }

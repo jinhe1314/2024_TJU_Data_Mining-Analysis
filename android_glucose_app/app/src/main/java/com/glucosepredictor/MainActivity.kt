@@ -232,38 +232,53 @@ class MainActivity : AppCompatActivity() {
         }
         dataSets.add(noStaticDataSet)
 
-        // 4. 普通进餐预测 (橙线)
-        val mealEntries = ArrayList<Entry>()
-        for (i in predictions.normalMeal.indices) {
-            mealEntries.add(Entry(predictionTimes[i], predictions.normalMeal[i]))
+        // 4. 低热量进餐预测 (橙线)
+        val lowMealEntries = ArrayList<Entry>()
+        for (i in predictions.lowCalorieMeal.indices) {
+            lowMealEntries.add(Entry(predictionTimes[i], predictions.lowCalorieMeal[i]))
         }
-        val mealDataSet = LineDataSet(mealEntries, "Normal Meal (intake=1)").apply {
+        val lowMealDataSet = LineDataSet(lowMealEntries, "Low-Calorie (30min ago)").apply {
             color = Color.rgb(255, 165, 0) // Orange
             setCircleColor(Color.rgb(255, 165, 0))
             lineWidth = 2f
-            circleRadius = 5f
+            circleRadius = 4f
             setDrawCircleHole(false)
-            setDrawValues(true)
-            valueTextSize = 8f
-            valueTextColor = Color.rgb(255, 140, 0)
+            setDrawValues(false)
+            valueTextSize = 7f
             mode = LineDataSet.Mode.LINEAR
         }
-        dataSets.add(mealDataSet)
+        dataSets.add(lowMealDataSet)
 
-        // 5. 高热量进餐预测 (紫线)
+        // 5. 中热量进餐预测 (紫线)
+        val midMealEntries = ArrayList<Entry>()
+        for (i in predictions.mediumCalorieMeal.indices) {
+            midMealEntries.add(Entry(predictionTimes[i], predictions.mediumCalorieMeal[i]))
+        }
+        val midMealDataSet = LineDataSet(midMealEntries, "Medium-Calorie (15min ago)").apply {
+            color = Color.rgb(128, 0, 128) // Purple
+            setCircleColor(Color.rgb(128, 0, 128))
+            lineWidth = 2f
+            circleRadius = 4f
+            setDrawCircleHole(false)
+            setDrawValues(false)
+            valueTextSize = 7f
+            mode = LineDataSet.Mode.LINEAR
+        }
+        dataSets.add(midMealDataSet)
+
+        // 6. 高热量进餐预测 (棕线)
         val highMealEntries = ArrayList<Entry>()
         for (i in predictions.highCalorieMeal.indices) {
             highMealEntries.add(Entry(predictionTimes[i], predictions.highCalorieMeal[i]))
         }
-        val highMealDataSet = LineDataSet(highMealEntries, "High-Calorie Meal (intake=3)").apply {
-            color = Color.rgb(128, 0, 128) // Purple
-            setCircleColor(Color.rgb(128, 0, 128))
+        val highMealDataSet = LineDataSet(highMealEntries, "High-Calorie (continuous)").apply {
+            color = Color.rgb(139, 69, 19) // Brown
+            setCircleColor(Color.rgb(139, 69, 19))
             lineWidth = 2f
-            circleRadius = 5f
+            circleRadius = 4f
             setDrawCircleHole(false)
-            setDrawValues(true)
-            valueTextSize = 8f
-            valueTextColor = Color.rgb(128, 0, 128)
+            setDrawValues(false)
+            valueTextSize = 7f
             mode = LineDataSet.Mode.LINEAR
         }
         dataSets.add(highMealDataSet)
@@ -289,21 +304,27 @@ class MainActivity : AppCompatActivity() {
         result.append(formatPredictions(predictions.noPatientInfo))
         result.append("\n")
 
-        result.append("普通进餐:\n")
-        result.append(formatPredictions(predictions.normalMeal))
+        result.append("低热量进餐 (30分钟前轻食):\n")
+        result.append(formatPredictions(predictions.lowCalorieMeal))
         result.append("\n")
 
-        result.append("高热量进餐:\n")
+        result.append("中热量进餐 (15分钟前正常进餐):\n")
+        result.append(formatPredictions(predictions.mediumCalorieMeal))
+        result.append("\n")
+
+        result.append("高热量进餐 (持续大餐):\n")
         result.append(formatPredictions(predictions.highCalorieMeal))
         result.append("\n")
 
-        // 影响分析
-        result.append("\n影响分析:\n")
-        val mealImpact = FloatArray(4) { predictions.normalMeal[it] - predictions.fullInput[it] }
-        val highMealImpact = FloatArray(4) { predictions.highCalorieMeal[it] - predictions.fullInput[it] }
+        // 影响分析 (仅显示60分钟后的影响)
+        result.append("\n60分钟后血糖影响:\n")
+        val lowImpact = predictions.lowCalorieMeal[3] - predictions.fullInput[3]
+        val midImpact = predictions.mediumCalorieMeal[3] - predictions.fullInput[3]
+        val highImpact = predictions.highCalorieMeal[3] - predictions.fullInput[3]
 
-        result.append("普通进餐影响: ${formatImpact(mealImpact)}\n")
-        result.append("高热量进餐影响: ${formatImpact(highMealImpact)}\n")
+        result.append("低热量: %+.1f mg/dL\n".format(lowImpact))
+        result.append("中热量: %+.1f mg/dL\n".format(midImpact))
+        result.append("高热量: %+.1f mg/dL\n".format(highImpact))
 
         resultText.text = result.toString()
     }
